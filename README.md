@@ -1,7 +1,7 @@
 # evpn-tfg
 Este repositorio contiene todos los archivos utilizados para el desarrollo práctico del Trabajo de Fin de Grado (TFG) sobre la emulación de redes EVPN utilizando VNX y FRRouting.
 
-# Estructura del repositorio
+# Estructura 
 
 - escenario1/:
     - evpnsimple.xml: Escenario simple con dos routers (B3 y D3) y dos hosts (H13 y H23) conectados mediante EVPN.
