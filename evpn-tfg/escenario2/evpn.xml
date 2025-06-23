@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<vnx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="/usr/share/xml/vnx/vnx-2.00.xsd">
+   <global>
+      <version>2.0</version>
+      <scenario_name>evpn</scenario_name>
+      <automac offset="657"/>
+      <vm_mgmt type="private" network="172.31.254.0" mask="24">
+         <host_mapping/>
+      </vm_mgmt>
+      <vm_defaults>
+         <console id="0" display="no"/>
+         <console id="1" display="yes"/>
+      </vm_defaults>
+   </global>
+<!-- Redes punto a punto entre routers -->
+   <net name="ptpA-B" mode="virtual_bridge" type="lan"/>
+   <net name="ptpB-C" mode="virtual_bridge" type="lan"/>
+   <net name="ptpB-D" mode="virtual_bridge" type="lan"/>
+
+<!-- Redes LAN de hosts -->
+   <net name="lanH1" mode="virtual_bridge" type="lan"/>
+   <net name="lanH2" mode="virtual_bridge" type="lan"/>
+   <net name="lanH3" mode="virtual_bridge" type="lan"/>
+   <net name="lanH4" mode="virtual_bridge" type="lan"/>
+   <net name="lanH5" mode="virtual_bridge" type="lan"/>
+
+<!-- Router A -->
+   <vm name="A" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="ptpA-B">
+      <ipv4 mask="255.255.255.252">10.0.0.1</ipv4>
+      </if>
+      <if id="2" net="lanH1">
+      </if>
+      <if id="3" net="lanH2">
+      </if>
+      <forwarding type="ip"/>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        sed -i -e 's/bgpd=.*/bgpd=yes/'   /etc/frr/daemons
+        sed -i -e 's/ospfd=.*/ospfd=yes/' /etc/frr/daemons
+        systemctl restart frr
+      </exec>
+      <filetree seq="on_boot" root="/root/" perms="755">conf/setupa.sh</filetree>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        /root/setupa.sh</exec>
+      <filetree seq="on_boot,loadcfg" root="/etc/frr/frr.conf" perms="644">conf/frrA.conf</filetree>
+      <exec seq="loadcfg" type="verbatim" ostype="system">
+        systemctl restart frr
+      </exec>
+   </vm>
+
+<!-- Router B -->
+   <vm name="B" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="ptpA-B">
+         <ipv4 mask="255.255.255.252">10.0.0.2</ipv4>
+      </if>
+      <if id="2" net="ptpB-C">
+         <ipv4 mask="255.255.255.252">10.0.0.5</ipv4>
+      </if>
+      <if id="3" net="ptpB-D">
+         <ipv4 mask="255.255.255.252">10.0.0.9</ipv4>
+      </if>
+      <forwarding type="ip"/>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        sed -i -e 's/bgpd=.*/bgpd=yes/'   /etc/frr/daemons
+        sed -i -e 's/ospfd=.*/ospfd=yes/' /etc/frr/daemons
+        systemctl restart frr
+      </exec>
+      <filetree seq="on_boot" root="/root/" perms="755">conf/setupb.sh</filetree>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        /root/setupb.sh
+      </exec>
+      <filetree seq="on_boot,loadcfg" root="/etc/frr/frr.conf" perms="644">conf/frrB.conf</filetree>
+      <exec seq="loadcfg" type="verbatim" ostype="system"> 
+        systemctl restart frr
+      </exec>
+   </vm>
+
+<!-- Router C -->
+   <vm name="C" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="ptpB-C">
+      <ipv4 mask="255.255.255.252">10.0.0.6</ipv4>
+      </if>
+      <if id="2" net="lanH3">
+      </if>
+      <if id="3" net="lanH4">
+      </if>
+      <forwarding type="ip"/>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        sed -i -e 's/bgpd=.*/bgpd=yes/'   /etc/frr/daemons
+        sed -i -e 's/ospfd=.*/ospfd=yes/' /etc/frr/daemons
+        systemctl restart frr
+      </exec>
+      <filetree seq="on_boot" root="/root/" perms="755">conf/setupc.sh</filetree>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        /root/setupc.sh
+      </exec>
+      <filetree seq="on_boot,loadcfg" root="/etc/frr/frr.conf" perms="644">conf/frrC.conf</filetree>
+      <exec seq="loadcfg" type="verbatim" ostype="system">
+        systemctl restart frr
+      </exec>
+   </vm>
+
+<!-- Router D -->
+   <vm name="D" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="ptpB-D">
+      <ipv4 mask="255.255.255.252">10.0.0.10</ipv4>
+      </if>
+      <if id="2" net="lanH5">
+      </if>
+      <forwarding type="ip"/>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        sed -i -e 's/bgpd=.*/bgpd=yes/'   /etc/frr/daemons
+        sed -i -e 's/ospfd=.*/ospfd=yes/' /etc/frr/daemons
+        systemctl restart frr
+      </exec>
+      <filetree seq="on_boot" root="/root/" perms="755">conf/setupd.sh</filetree>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        /root/setupd.sh</exec>
+      <filetree seq="on_boot,loadcfg" root="/etc/frr/frr.conf" perms="644">conf/frrD.conf</filetree>
+      <exec seq="loadcfg" type="verbatim" ostype="system">
+        systemctl restart frr
+      </exec>
+   </vm>
+
+<!-- Hosts H1 a H5 -->
+   <vm name="H1" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="lanH1">
+      <ipv4 mask="255.255.255.0">10.1.1.1</ipv4>
+      </if>
+   </vm>
+
+   <vm name="H2" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="lanH2">
+      <ipv4 mask="255.255.255.0">10.1.2.1</ipv4>
+      </if>
+   </vm>
+
+   <vm name="H3" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="lanH3">
+      <ipv4 mask="255.255.255.0">10.1.1.2</ipv4>
+      </if>
+   </vm>
+
+   <vm name="H4" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="lanH4">
+      <ipv4 mask="255.255.255.0">10.1.2.2</ipv4>
+      </if>
+   </vm>
+
+   <vm name="H5" type="lxc" arch="x86_64" exec_mode="lxc-attach">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="lanH5">
+      <ipv4 mask="255.255.255.0">10.1.1.3</ipv4>
+      </if>
+   </vm>
+</vnx>

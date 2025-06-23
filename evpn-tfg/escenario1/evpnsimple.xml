@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<vnx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="/usr/share/xml/vnx/vnx-2.00.xsd">
+   <global>
+      <version>2.0</version>
+      <scenario_name>evpnsimple</scenario_name>
+      <automac offset="657"/>
+      <vm_mgmt type="private" network="172.31.254.0" mask="24">
+         <host_mapping/>
+      </vm_mgmt>
+      <vm_defaults>
+         <console id="0" display="no"/>
+         <console id="1" display="yes"/>
+      </vm_defaults>
+   </global>
+   <net name="ptpB3-D3" mode="virtual_bridge" type="lan"/>
+   <net name="lanB3" mode="virtual_bridge" type="lan"/>
+   <net name="lanD3" mode="virtual_bridge" type="lan"/>
+
+   <vm name="B3" type="lxc" subtype="" os="" exec_mode="lxc-attach" arch="x86_64">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="ptpB3-D3">
+         <ipv4 mask="255.255.255.252">10.141.163.9</ipv4>
+      </if>
+      <if id="2" net="lanB3">
+      </if>
+      <forwarding type="ip"/>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        sed -i -e 's/bgpd=.*/bgpd=yes/'   /etc/frr/daemons
+        sed -i -e 's/ospfd=.*/ospfd=yes/' /etc/frr/daemons
+        sed -i -e 's/zebra_options=.*/zebra_options="  -A 0.0.0.0 -s 90000000"/' /etc/frr/daemons
+        sed -i -e 's/bgpd_options=.*/bgpd_options="  -A 0.0.0.0"/' /etc/frr/daemons
+        systemctl restart frr
+      </exec> 
+      <filetree seq="on_boot" root="/root/" perms="755">conf/setupb3.sh</filetree>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        /root/setupb3.sh
+      </exec>
+      <filetree seq="on_boot,loadcfg" root="/etc/frr/frr.conf" perms="755">conf/frrB3.conf</filetree>
+      <exec seq="loadcfg" type="verbatim" ostype="system">
+        systemctl restart frr
+      </exec>
+   </vm>
+   <vm name="D3" type="lxc" subtype="" os="" exec_mode="lxc-attach" arch="x86_64">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="ptpB3-D3">
+         <ipv4 mask="255.255.255.252">10.141.163.10</ipv4>
+      </if>
+      <if id="2" net="lanD3">
+      </if>
+      <forwarding type="ip"/>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        sed -i -e 's/bgpd=.*/bgpd=yes/'   /etc/frr/daemons
+        sed -i -e 's/ospfd=.*/ospfd=yes/' /etc/frr/daemons
+        sed -i -e 's/zebra_options=.*/zebra_options="  -A 0.0.0.0 -s 90000000"/' /etc/frr/daemons
+        systemctl restart frr
+      </exec>
+      <filetree seq="on_boot" root="/root/" perms="755">conf/setupd3.sh</filetree>
+      <exec seq="on_boot" type="verbatim" ostype="system">
+        /root/setupd3.sh
+      </exec>
+      <filetree seq="on_boot,loadcfg" root="/etc/frr/frr.conf" perms="755">conf/frrD3.conf</filetree>
+      <exec seq="loadcfg" type="verbatim" ostype="system">
+        systemctl restart frr
+      </exec>
+   </vm>
+   <vm name="H13" type="lxc" subtype="" os="" exec_mode="lxc-attach" arch="x86_64">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="lanB3">
+         <ipv4 mask="255.255.255.0">10.141.176.1</ipv4>
+      </if>
+      <route type="ipv4" gw="10.141.176.254">0.0.0.0/0</route>
+   </vm>
+   <vm name="H23" type="lxc" subtype="" os="" exec_mode="lxc-attach" arch="x86_64">
+      <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+      <mng_if>no</mng_if>
+      <if id="1" net="lanD3">
+         <ipv4 mask="255.255.255.0">10.141.176.2</ipv4>
+      </if>
+   </vm>
+ 
+</vnx>
